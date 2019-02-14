@@ -1,13 +1,14 @@
 import React from 'react';
 import { Platform, StatusBar, StyleSheet, View } from 'react-native';
 import {AppNavigator} from './navigation/AppNavigator';
-import { AppLoading, Font, } from 'expo';
+import { AppLoading, Font} from 'expo';
 
 export default class App extends React.Component {
   
   state={
     fontsAreLoaded : false
   }
+  
   
   async componentWillMount() {
     await Font.loadAsync({
@@ -23,6 +24,10 @@ export default class App extends React.Component {
     if(fonts){
       return (
         <View style={styles.container}>
+          {Platform.OS === 'android' && <View style={{
+          height : '4%',
+          backgroundColor : 'black',
+        }} />}
           {Platform.OS === 'ios' && <StatusBar barStyle="default" />}
           <Layout/>
         </View>
