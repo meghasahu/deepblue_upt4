@@ -25,6 +25,7 @@ export default class Login extends React.Component {
   }
 
 
+
   fetchData = (navigation) => {
     //var userRef = firebase.database().ref('users');
     // userRef.orderByChild("Phone number").equalTo(this.state.phone).once('value', (data) => {
@@ -41,8 +42,11 @@ export default class Login extends React.Component {
             if(childSnap.val()==phone){
               try {
                 console.log("match");
-                onSignIn();
-                navigation.navigate('Register');
+               // _storeData(code,key);
+                onSignIn(key);
+                navigation.navigate('Main',{
+                  code : key
+                });
               } catch (error) {
                 // Error saving data
               }

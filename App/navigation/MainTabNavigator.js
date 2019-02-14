@@ -55,6 +55,5 @@ ProfileStack.navigationOptions = {
 
 export default createBottomTabNavigator({
   HomeStack,
-  HistoryStack,
   ProfileStack,
 });

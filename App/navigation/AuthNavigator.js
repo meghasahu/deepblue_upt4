@@ -4,5 +4,4 @@ import Register from '../screens/signin/Register';
 
 export default AuthStack = createStackNavigator({
     Login : Login,
-    Register : Register
 });
