@@ -55,6 +55,7 @@ def convert_to_voltage(self, adc_output, VREF=3.3):
     VREF could be adjusted here (standard uses the 3V3 rail from the Rpi)
     """
     return adc_output * (VREF / (2 ** 12 - 1))
+    
 
 
 
@@ -69,19 +70,19 @@ spi.max_speed_hz = 976000
 def turbidity():
     ADC_output_code = readADC_MSB()
     #ADC_voltage = convert_to_voltage(ADC_output_code)
-    print("MCP3201 output code (MSB-mode): %d" % ADC_output_code)
+    #print("MCP3201 output code (MSB-mode): %d" % ADC_output_code)
     #print("MCP3201 voltage: %0.2f V" % ADC_voltage)
     
     sleep(0.1)  # wait minimum of 100 ms between ADC measurements
     
     ADC_output_code = readADC_LSB()
     #ADC_voltage = convert_to_voltage(ADC_output_code)
-    print("MCP3201 output code (LSB-mode): %d" % ADC_output_code)
+    #print("MCP3201 output code (LSB-mode): %d" % ADC_output_code)
     #print("MCP3201 voltage: %0.2f V" % ADC_voltage)
-    print(ADC_output_code)
+    #print(ADC_output_code)
     
     sleep(1)
-    return 
+    return ADC_output_code
 
 '''except (KeyboardInterrupt):
     print('\n', "Exit on Ctrl-C: Good bye!")
@@ -93,5 +94,5 @@ except:
 finally:
     print()
 '''
-while True:
-    turbidity()
+while 1:
+    print(turbidity())

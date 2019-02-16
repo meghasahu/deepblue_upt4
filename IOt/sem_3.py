@@ -144,14 +144,14 @@ def assign(count,key):
                 #print(thread_zero.is_alive())
                 thread_zero.start()
                 break
-            elif count ==  1: # and thread_one.is_alive()==False:
+            '''elif count ==  1: # and thread_one.is_alive()==False:
                 thread_one = threading.Thread(target=thread_function,args=(count,key[1]))
                 thread_one.start()
                 break
             elif count ==  2:# and thread_two.is_alive()==False:
                 thread_two = threading.Thread(target=thread_function,args=(count,key[2]))
                 thread_two.start()
-                break                    
+                break '''                   
         count = count + 1
         if count == len(thread_semaphore):
             print("All Booths Occupied")
@@ -247,7 +247,8 @@ def main():
         #lcd and keypad
         #display_lcd("1- New User\n2- Existing User")
         #option = int(getfinaldata(1))
-        option = input("Enter 1 for new user and 2 for already registered user : ")
+        option = input("1- New User\n2- Existing User\n3- Direct User\n4- Cleaner")
+        #option = int(getfinaldata(1))
         #option = int(keypadCall(1))
         
             #display_lcd("2- Existing User")
@@ -256,24 +257,37 @@ def main():
             #display_lcd("1- New User")
             #phone=input("Enter phone number :")
             #display_lcd("Enter phone number :")
+            phone = input("Enter phone number : ")
             #phone = getfinaldata(10)
-            phone = '9769577063'
+            #phone = '9769577063'
             #phone = keypadCall(10)
             code = randint(999,9999)
-            display_lcd("your code is \n"+str(code))
+            print("Your Code is \n"+str(code))
+            #display_lcd("your code is \n"+str(code))
             newuser(phone, int(code), f)
             
         elif option==2 :
             #display_lcd("Enter Your Code:")
             #code = getfinaldata(4)
             #display_lcd(code)
-            code=input("Enter your code : ")
-            print(type(code))
+            code = input("Enter your code : ")
+            #code = getfinaldata(4)
             #code = int(input())
             checkuser(code, f)
         elif option==3 :
             key[count] = "abcd"
             assign(count,key)
+        elif option==4 :
+            #display_lcd("1- Clean Booth\n2- Free Booth")
+            option1 = input("1- Clean Booth\n2- Free Booth\n")
+            #option1= int(getfinaldata(1))
+            #display_lcd("Enter Booth Number")
+            option2 = input("Enter Booth Number :")
+            #option2=int(getfinaldata(1))
+            if option1==1:
+                thread_semaphore[option2-1] = 1
+            if option1==2:
+                thread_semaphore[option2-1] = 0
         else:
             print("hey")
             continue

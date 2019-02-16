@@ -21,16 +21,18 @@ def getfinaldata(n):
         
     #for i in range(0,n):
         data = getdata()
-        print(data)
+        
         if(data=='*'):
             i=i-1
             ret = ret[:-1]
-        if(data!='*'):
+        if(data!='*' and data!='#'):
             ret = ret+str(data)
             i=i+1
-        time.sleep(0.1)
-        display_lcd(str(ret))
-        
-        print('i'+str(i))
+        if(data=='#'):
+            ret = ret+str("6")
+            i=i+1
+              
+        time.sleep(0.25)
+        print(str(ret))
     return ret
 print(getfinaldata(10))

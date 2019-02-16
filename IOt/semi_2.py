@@ -9,10 +9,12 @@ from random import randint
 import RPi.GPIO as GPIO
 from sms import sendPostRequest
 import datetime
-
-from keytest import keypadCall
+import spidev
+from import_keypad import getfinaldata
+from final_lcd import display_lcd
+from t import turbidity
 GPIO.setmode(GPIO.BCM)
-#GPIO.setup(21, GPIO.IN) #PIR
+GPIO.setup(4, GPIO.IN) #PIR
 #GPIO.setup(11, GPIO.IN)
 #GPIO.setup(10, GPIO.IN)
 
@@ -27,11 +29,11 @@ posts_ref = ref.child('users')
 ref1 = db.reference()
 usage_ref = ref1.child('usage')
 
-thread_semaphore = [0,7,0]
+thread_semaphore = [0,18,9]
 time_of_each_thread = [0,0,0]
 semaphore_one = [0,0,0] #to detect using stae
 semaphore_two = [0,0,0] #changed in every state to keep track of the occupancy of a booth
-pir_connected_to_GPIO_mapped = [21,11,10]
+pir_connected_to_GPIO_mapped = [4,11,10]
 count=0
 code=0
 key = ['0','0','0']
@@ -39,67 +41,99 @@ key = ['0','0','0']
 def thread_function(thread_number,key):
     
     time_in = datetime.datetime.now()
-        
     
+    x = 0
     thread_semaphore[thread_number] = 1
     print('Booth Number - '+str(thread_number+1))
     while 1:
+        
+        ## Detecting if user is entering in allocated toilet
         if GPIO.input(pir_connected_to_GPIO_mapped[thread_number]) and semaphore_one[thread_number]==0:
             time_of_each_thread[thread_number] = time.time()
             semaphore_one[thread_number] = 1
             semaphore_two[thread_number] = 1
             print("Entered " + str(thread_number+1))
             
+        #If user is using (turbidity part)
         elif (GPIO.input(pir_connected_to_GPIO_mapped[thread_number])==0) and semaphore_two[thread_number]==1:
             semaphore_two[thread_number] = 0
+            
             print("Using " + str(thread_number+1))
+        
+        #check var assign incentive
+        elif GPIO.input(pir_connected_to_GPIO_mapped[thread_number] == 0 and semaphore_one[thread_number]==1):
+            if (turbidity() in [2000,3500]):
+                x=x+1
             
         elif GPIO.input(pir_connected_to_GPIO_mapped[thread_number]) and semaphore_one[thread_number]==1 and semaphore_two[thread_number]==0:
+                
             semaphore_two[thread_number] = 0
             semaphore_one[thread_number] = 0
             time_consumed = time.time() - time_of_each_thread[thread_number]
             print("left " + str(thread_number+1))
-            print("Time consumed : " + str(time_consumed))
-            if(time_consumed<10):
-                incentives = 0
-                print("Fake usage")
-            if time_consumed>10 and time_consumed<20:
-                incentives = 5
-                print("Gained 5 points")
-            if time_consumed>20:
-                incentives = 10
-                print("Gained 10 points")
+            
             thread_semaphore[thread_number] = 0
-            '''if thread_number==0:
-                thread_zero._stop()
-            elif thread_number==1:
-                thread_one._stop()
-            elif thread_number==2:
-                thread_two._stop()'''
+            
             time_out = datetime.datetime.now()
             total = time_out-time_in
             time1 = str(time_in)
             time2 = str(time_out)
             time3 = str(total)
-            new_usage_ref = usage_ref.push()
-            new_usage_ref.set({
-                'key': key,
-                'time_in': time1,
-                'time_out' : time2,
-                'total_time_used' : time3,
-                'incentives': incentives,
-            })
-            return
+            if key != "abcd":
+                new_usage_ref = usage_ref.push()
+                new_usage_ref.set({
+                    'key': key,
+                    'time_in': time1,
+                    'time_out' : time2,
+                    'total_time_used' : time3,
+                    #'incentives': incentives,
+                })
+                ## new code
+                ## x = turbidity
+                if x > 3:
+                    streak_ref = ref.child('user_streak').child(key)
+                    data = streak_ref.get()
+                    lastused = datetime.datetime.now()
+                    if data!= None:
+                        yourdate = datetime.datetime.strptime(data['last_usage'], '%Y-%m-%d %H:%M:%S.%f')
+                        if (lastused.date()-yourdate.date()).days == 1:
+                            # other than 5 10 15 etc
+                            streak = data['streak']+1
+                            streak_ref.set({
+                                'streak':streak,
+                                'last_usage':str(lastused),
+                                'completedStreak':data['completedStreak'],
+                                'total_incentives':data['total_incentives'],
+                                })
+                                
+                        else (lastused.date()-yourdate.date()).days !=0:
+                            ## Not same day
+                            ## streak break
+                            streak_ref.set({
+                                'streak':1,
+                                'last_usage':str(lastused),
+                                'completedStreak':data['completedStreak'],
+                                'total_incentives':data['total_incentives'],
+                                    })
+                    else:
+                        # new user
+                        # first time using hence giving points 
+                        streak_ref.set({
+                                'streak':1,
+                                'last_usage':str(lastused),
+                                'completedStreak':0,
+                                'total_incentives':5,
+                                })
+                
+                
+            ## Done
             
-        #while GPIO.input(pir_connected_to_GPIO_mapped[thread_number]) and semaphore_two[thread_number]==1:
-            #print('Infinite')
+            return
             #pass
         time.sleep(2)
 
 #t1=t2=t0=0
-'''thread_zero = threading.Thread(target=thread_function,args=(count,))
-thread_one = threading.Thread(target=thread_function,args=(count,))
-thread_two = threading.Thread(target=thread_function,args=(count,))'''
+
 
 def assign(count,key):
     for x in thread_semaphore:
@@ -109,14 +143,14 @@ def assign(count,key):
                 #print(thread_zero.is_alive())
                 thread_zero.start()
                 break
-            '''elif count ==  1: # and thread_one.is_alive()==False:
+            elif count ==  1: # and thread_one.is_alive()==False:
                 thread_one = threading.Thread(target=thread_function,args=(count,key[1]))
                 thread_one.start()
                 break
             elif count ==  2:# and thread_two.is_alive()==False:
                 thread_two = threading.Thread(target=thread_function,args=(count,key[2]))
                 thread_two.start()
-                break'''                    
+                break                    
         count = count + 1
         if count == len(thread_semaphore):
             print("All Booths Occupied")
@@ -135,23 +169,19 @@ def newuser(phone, code, f):
     positionNumber = f.storeTemplate()
     name = f.downloadCharacteristics()
     
-    #f.loadTemplate(1, 0x02)
-    #char_store = str(f.downloadCharacteristics(0x02))
-    #name= char_store.translate(None, ',[]')
-    print(name)
     
-    new_post_ref = posts_ref.push()
-    new_post_ref.set({
+    
+    print(positionNumber)
+    key[count] = posts_ref.push({
         'Template': name,
         'Code': code,
         'Phone number' : phone,
-        'positionNumber': positionNumber,
-    })
+        'positionNumber' : positionNumber
+    }).key
     message="Your code is "+str(code)+"."
     
     print('Finger enrolled successfully! Your Unique Code is %d '%(code))
     response = sendPostRequest('MW7X5CZ2ZM4TKD8QT7BM7A240215VGSV', 'TZELXM1CEZVHE20I', 'stage', phone, '8286123583', message)
-    key[count] = new_post_ref.push().key()
     assign(count,key)
     #snapshot = posts_ref.order_by_child('Code').equal_to(code).get()
     
@@ -210,29 +240,40 @@ def finger_initialize():
 def main():
     
     f = finger_initialize()
-    print("Welcome")
+    display_lcd("Welcome")
     while True:
-        #option = input("Enter 1 for new user and 2 for already registered user : ")
-        print("Enter 1 for new user and 2 for already registered user : ")
-        #option = int(input("Enter a number: "))
-        option = int(keypadCall(1))
-        print("option")
-        print(option)
+        #lcd
+        #lcd and keypad
+        display_lcd("1- New User\n2- Existing User")
+        option = int(getfinaldata(1))
+        
+            #display_lcd("2- Existing User")
+        
         if option == 1:
-            #phone=input("Enter phone number :")
-            print("Enter phone number :")
-            #phone = int(input())
-            phone = keypadCall(10)
+            #New User
+            display_lcd("Enter phone number :")
+            phone = getfinaldata(10)
             code = randint(999,9999)
-            print(code)
-            newuser(phone, code, f)
+            display_lcd("your code is \n"+str(code))
+            newuser(phone, int(code), f)
             
         elif option==2 :
-            code=input("Enter your code : ")
-            print("Enter your code :")
-            #code = int(input())
+            display_lcd("Enter Your Code:")
+            code = getfinaldata(4)
+            display_lcd(code)
             checkuser(code, f)
+        elif option==3 :
+            key[count] = "abcd"
+            assign(count,key)
+        elif option==4 :
+            display_lcd("1- Clean Booth\n2- Free Booth")
+            option1= int(getfinaldata(1))
+            display_lcd("Enter Booth Number")
+            option2=int(getfinaldata(1))
+            if option1==1:
+                thread_semaphore[option2-1] = 1
         else:
+            print("hey")
             continue
 if __name__=="__main__":
     main()

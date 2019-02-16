@@ -15,8 +15,8 @@ from final_lcd import display_lcd
 from t import turbidity
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(4, GPIO.IN) #PIR
-#GPIO.setup(11, GPIO.IN)
-#GPIO.setup(10, GPIO.IN)
+GPIO.setup(11, GPIO.IN)
+GPIO.setup(10, GPIO.IN)
 
 cred = credentials.Certificate('./deepblueupt-4-firebase-adminsdk-5rnmz-3cc90e6541.json')
 
@@ -55,18 +55,19 @@ def thread_function(thread_number,key):
             print("Entered " + str(thread_number+1))
             
         #If user is using (turbidity part)
-        elif (GPIO.input(pir_connected_to_GPIO_mapped[thread_number])==0) and semaphore_two[thread_number]==1:
+        elif GPIO.input(pir_connected_to_GPIO_mapped[thread_number])==0 and semaphore_two[thread_number]==1:
             semaphore_two[thread_number] = 0
             
             print("Using " + str(thread_number+1))
         
         #check var assign incentive
-        elif GPIO.input(pir_connected_to_GPIO_mapped[thread_number] == 0 and semaphore_one[thread_number]==1):
-            if (turbidity() in [2000,3500]):
+        elif GPIO.input(pir_connected_to_GPIO_mapped[thread_number]) == 0 and semaphore_one[thread_number]==1:
+            x=turbidity()
+            if x in range(4000,4500):
                 x=x+1
-            
-        elif GPIO.input(pir_connected_to_GPIO_mapped[thread_number]) and semaphore_one[thread_number]==1 and semaphore_two[thread_number]==0:
+                print(x)
                 
+        elif GPIO.input(pir_connected_to_GPIO_mapped[thread_number]) and semaphore_one[thread_number]==1 and semaphore_two[thread_number]==0:                
             semaphore_two[thread_number] = 0
             semaphore_one[thread_number] = 0
             time_consumed = time.time() - time_of_each_thread[thread_number]
@@ -247,7 +248,9 @@ def main():
         #lcd and keypad
         #display_lcd("1- New User\n2- Existing User")
         #option = int(getfinaldata(1))
-        option = input("Enter 1 for new user and 2 for already registered user : ")
+        print("1- New User\n2- Existing User\n3- Direct User\n4- Cleaner")
+        option = int(getfinaldata(1))
+        print(option)
         #option = int(keypadCall(1))
         
             #display_lcd("2- Existing User")
@@ -256,24 +259,42 @@ def main():
             #display_lcd("1- New User")
             #phone=input("Enter phone number :")
             #display_lcd("Enter phone number :")
+            print("Enter phone number : ")
             #phone = getfinaldata(10)
             phone = '9769577063'
             #phone = keypadCall(10)
             code = randint(999,9999)
-            display_lcd("your code is \n"+str(code))
+            print("Your Code is \n"+str(code))
+            #display_lcd("your code is \n"+str(code))
             newuser(phone, int(code), f)
             
-        elif option==2 :
+        elif option == 2 :
             #display_lcd("Enter Your Code:")
             #code = getfinaldata(4)
             #display_lcd(code)
-            code=input("Enter your code : ")
-            print(type(code))
+            print("Enter your code : ")
+            code = int(getfinaldata(4))
+            print(code)
             #code = int(input())
             checkuser(code, f)
-        elif option==3 :
+            
+        elif option == 3 :
             key[count] = "abcd"
             assign(count,key)
+            
+        elif option == 4 :
+            #display_lcd("1- Clean Booth\n2- Free Booth")
+            print("1- Clean Booth\n2- Free Booth\n")
+            option1= int(getfinaldata(1))
+            print(option1)
+            #display_lcd("Enter Booth Number")
+            print("Enter Booth Number :")
+            option2=int(getfinaldata(1))
+            print(option2)
+            if option1==1:
+                thread_semaphore[option2-1] = 1
+            if option1==2:
+                thread_semaphore[option2-1] = 0
         else:
             print("hey")
             continue
